@@ -18,6 +18,16 @@ public class SenderReciever {
     protected static class RecieverData {
         InetAddress address;
         int port;
+
+        @Override
+        public int hashCode() {
+            return address.hashCode();
+        }
+    }
+
+    protected static class MessageType {
+        public static final String CONNECT_REQUEST = "HI";
+        public static final String CONNECT_RESPONSE = "HI_OK";
     }
 
     SenderReciever(int port) {
@@ -32,14 +42,14 @@ public class SenderReciever {
         }
     }
 
-    protected void Recieve(int delayMills, DataProcessor processor) throws InterruptedException {
+    protected void Listen(int delayMills, DataProcessor processor) throws InterruptedException {
         byte[] recieve_buff = new byte[1 << 16]; // 2 bytes
         DatagramPacket datagramPacket = new DatagramPacket(recieve_buff, recieve_buff.length);
 
         while (true) {
             try {
                 datagramSocket.receive(datagramPacket);
-                processor.Process(Misc.BytesToString(recieve_buff));
+                processor.Process(Misc.BytesToString(recieve_buff), datagramPacket);
             } catch (IOException ex) {
                 System.err.println("Send error");
                 ex.printStackTrace();
@@ -47,7 +57,7 @@ public class SenderReciever {
         }
     }
 
-    protected void Send(Object message, RecieverData[] recievers, int delayMills) throws InterruptedException {
+    protected void SendLoop(Object message, RecieverData[] recievers, int delayMills) throws InterruptedException {
         while (true) {
             byte[] send_buff = Misc.StringToBytes(message.toString());
             DatagramPacket datagramPacket = new DatagramPacket(send_buff, send_buff.length);
@@ -64,6 +74,22 @@ public class SenderReciever {
             }
 
             sleep(delayMills);
+        }
+    }
+
+    protected void Send(Object message, RecieverData reciever) {
+        Send(message, reciever.address, reciever.port);
+    }
+
+    protected void Send(Object message, InetAddress address, int port) {
+        byte[] send_buff = Misc.StringToBytes(message.toString());
+        DatagramPacket datagramPacket = new DatagramPacket(send_buff, send_buff.length, address, port);
+
+        try {
+            datagramSocket.send(datagramPacket);
+        } catch (IOException ex) {
+            System.err.println("Send error");
+            ex.printStackTrace();
         }
     }
 

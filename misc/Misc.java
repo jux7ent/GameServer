@@ -1,9 +1,10 @@
 package com.company.game.misc;
 
-import java.net.InetAddress;
-
 public class Misc {
     private final static char END_CHAR = '!';
+
+    public static class DataPacket {
+    }
 
     public static String BytesToString(byte[] input) {
         if (input == null) {

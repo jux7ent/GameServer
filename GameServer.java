@@ -1,15 +1,17 @@
 package com.company.game;
 
-import com.company.game.misc.DataProcessor;
+import com.company.game.misc.DataToSend;
+
 import java.net.InetAddress;
+import java.util.HashMap;
 
 
 public class GameServer extends SenderReciever {
     int maxClients;
     int numConnectedClients;
 
-    boolean[] clientConnected;
-    InetAddress[] clientAddress;
+    HashMap<InetAddress, DataToSend> clientsData;
+    HashMap<InetAddress, Integer> addressPortMap;
 
     GameServer(int maxClients, int port) {
         super(port);
@@ -17,17 +19,23 @@ public class GameServer extends SenderReciever {
         this.maxClients = maxClients;
         numConnectedClients = 0;
 
-        clientConnected = new boolean[this.maxClients];
-        clientAddress = new InetAddress[this.maxClients];
+        clientsData = new HashMap<InetAddress, DataToSend>();
+        addressPortMap = new HashMap<InetAddress, Integer>();
     }
 
     public void Start() {
         // TODO
         try {
-            Recieve(1000, new DataProcessor() {
-                @Override
-                public void Process(String message) {
-                    System.out.println(message);
+            Listen(1000, (message, datagramPacket) -> {
+                System.out.println(message);
+                if (message.equals(MessageType.CONNECT_REQUEST)) {
+                    if (clientsData.get(datagramPacket.getAddress()) == null) {
+                        clientsData.put(datagramPacket.getAddress(), new DataToSend());
+                        addressPortMap.put(datagramPacket.getAddress(), datagramPacket.getPort());
+                    }
+                    Send(MessageType.CONNECT_RESPONSE, datagramPacket.getAddress(), datagramPacket.getPort());
+                } else {
+                    clientsData.put(datagramPacket.getAddress(), DataToSend.ParseData(message));
                 }
             });
         } catch (InterruptedException ex) {
@@ -35,31 +43,5 @@ public class GameServer extends SenderReciever {
             ex.printStackTrace();
         }
 
-    }
-
-    private InetAddress _GetClientAddress(int clientIndex) {
-        return clientAddress[clientIndex];
-    }
-
-    private boolean _IsClientConnected(int clientIndex) {
-        return clientConnected[clientIndex];
-    }
-
-    private int _FindExistingClientIndex(final InetAddress address) {
-        for (int i = 0; i < maxClients; ++i) {
-            if (clientConnected[i] && clientAddress[i] == address) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    private int _FindFreeClientIndex() {
-        for (int i = 0; i < maxClients; ++i) {
-            if (!clientConnected[i])
-                return i;
-        }
-
-        return -1;
     }
 }
