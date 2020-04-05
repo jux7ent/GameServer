@@ -1,51 +1,53 @@
 package com.company.game;
 
-import java.net.DatagramSocket;
+import com.company.game.misc.DataProcessor;
 import java.net.InetAddress;
-import java.net.SocketException;
 
-import static javafx.application.Platform.exit;
 
-public class GameServer {
-    int m_maxClients;
-    int m_numConnectedClients;
-    boolean[] m_clientConnected;
-    InetAddress[] m_clientAddress;
-    DatagramSocket m_datagramSocket;
+public class GameServer extends SenderReciever {
+    int maxClients;
+    int numConnectedClients;
+
+    boolean[] clientConnected;
+    InetAddress[] clientAddress;
 
     GameServer(int maxClients, int port) {
+        super(port);
         System.out.println("Server initialization");
-        m_maxClients = maxClients;
-        m_numConnectedClients = 0;
+        this.maxClients = maxClients;
+        numConnectedClients = 0;
 
-        m_clientConnected = new boolean[m_maxClients];
-        m_clientAddress = new InetAddress[m_maxClients];
-
-        try {
-            m_datagramSocket = new DatagramSocket(port);
-        } catch (SocketException ex) {
-            System.err.println("Socket exception");
-            ex.printStackTrace();
-            exit();
-        }
+        clientConnected = new boolean[this.maxClients];
+        clientAddress = new InetAddress[this.maxClients];
     }
 
     public void Start() {
         // TODO
-        m_datagramSocket.close();
+        try {
+            Recieve(1000, new DataProcessor() {
+                @Override
+                public void Process(String message) {
+                    System.out.println(message);
+                }
+            });
+        } catch (InterruptedException ex) {
+            System.err.println("Recieve exception");
+            ex.printStackTrace();
+        }
+
     }
 
     private InetAddress _GetClientAddress(int clientIndex) {
-        return m_clientAddress[clientIndex];
+        return clientAddress[clientIndex];
     }
 
     private boolean _IsClientConnected(int clientIndex) {
-        return m_clientConnected[clientIndex];
+        return clientConnected[clientIndex];
     }
 
     private int _FindExistingClientIndex(final InetAddress address) {
-        for (int i = 0; i < m_maxClients; ++i) {
-            if (m_clientConnected[i] && m_clientAddress[i] == address) {
+        for (int i = 0; i < maxClients; ++i) {
+            if (clientConnected[i] && clientAddress[i] == address) {
                 return i;
             }
         }
@@ -53,8 +55,8 @@ public class GameServer {
     }
 
     private int _FindFreeClientIndex() {
-        for (int i = 0; i < m_maxClients; ++i) {
-            if (!m_clientConnected[i])
+        for (int i = 0; i < maxClients; ++i) {
+            if (!clientConnected[i])
                 return i;
         }
 
